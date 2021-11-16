@@ -1,0 +1,103 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: webhook-receiver
+spec:
+  serviceAccountName: webhook-receiver
+  triggers:
+    - template:
+        name: webhook-receiver
+      bindings:
+        - ref: webhook-receiver
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: webhook-receiver
+spec:
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: zuzana-drozdova-e2e-
+      spec:
+        serviceAccountName: zuzana-drozdova-zuzana-drozdova-service
+        params:
+          - name: app-name
+            value: zuzana-drozdova-express
+          - name: source-repo
+            value: https://github.com/cloud-native-garage-method-cohort/zuzana-drozdova-e2e
+          - name: image-repo
+            value: quay.io/zuzana_drozdova/express-sample-app
+        pipelineRef:
+          name: zuzana-drozdova-e2e
+        workspaces:
+          - name: pipeline-shared-data
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: webhook-receiver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: webhook-receiver
+rules:
+  - resources:
+      - eventlisteners
+      - triggerbindings
+      - triggertemplates
+    apiGroups:
+      - triggers.tekton.dev
+    verbs:
+      - get
+  - resources:
+      - pipelineruns
+      - pipelineresources
+    apiGroups:
+      - tekton.dev
+    verbs:
+      - create
+  - resources:
+      - configmaps
+    apiGroups:
+      - ""
+    verbs:
+      - list
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webhook-receiver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: webhook-receiver
+roleRef:
+  name: webhook-receiver
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - name: webhook-receiver
+    kind: ServiceAccount
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webhook-receiver
+spec:
+  port:
+    targetPort: 8080
+  to:
+    name: el-webhook-receiver
+    kind: Service
+    weight: 100

@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: zuzana-drozdova-e2e-
+spec:
+  serviceAccountName: zuzana-drozdova-zuzana-drozdova-service
+  params:
+    - name: source-repo
+      value: https://github.com/cloud-native-garage-method-cohort/zuzana-drozdova-e2e
+    - name: image-repo
+      value: quay.io/zuzana_drozdova/express-sample-app
+    - name: app-name
+      value: zuzana-drozdova-express
+  pipelineRef:
+    name: zuzana-drozdova-e2e
+  workspaces:
+    - name: pipeline-shared-data
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 1Gi
+          accessModes:
+            - ReadWriteOnce
